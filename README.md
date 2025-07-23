@@ -117,3 +117,7 @@ This Streamlit app provides a user-friendly interface to delete Databricks resou
 
 [MIT License.  See LICENSE for details.](https://choosealicense.com/licenses/mit/)
 
+
+## Authors
+
+- [@Ayush Singh Rawat](https://github.com/AyushSinghRawat-hub)
