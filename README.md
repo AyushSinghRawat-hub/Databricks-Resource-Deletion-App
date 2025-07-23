@@ -21,18 +21,22 @@ Dependencies: Listed in requirements.txt.
 
 Installation
 
-Clone the Repository:git clone <repository-url>
+Clone the Repository:
+git clone <repository-url>
 cd <repository-directory>
 
 
-Install Dependencies:pip install -r requirements.txt
+Install Dependencies:
+pip install -r requirements.txt
 
-Contents of requirements.txt:streamlit==1.39.0
+Contents of requirements.txt:
+streamlit==1.39.0
 databricks-sdk==0.34.0
 requests==2.32.3
 
 
-Optional CLI Setup (if using CLI-based deletion):pip install databricks-cli==0.18.0
+Optional CLI Setup (if using CLI-based deletion):
+pip install databricks-cli==0.18.0
 databricks configure --token
 
 
@@ -42,13 +46,15 @@ Enter your workspace URL and token when prompted.
 
 Usage
 
-Run the App:streamlit run app.py
+Run the App:
+streamlit run app.py
 
 
 The app opens in your browser at http://localhost:8501.
 
 
 Configure the App:
+
 In the sidebar, enter your Databricks Workspace URL (e.g., https://adb-1234567890.cloud.databricks.com).
 Enter your Personal Access Token (generated in Databricks under User Settings).
 Optionally, enable Advanced Options:
@@ -59,15 +65,18 @@ Check "Attempt to delete associated AI Bricks" to flag AI Brick endpoints (note:
 
 
 Select Resources:
+
 Choose resources to delete (e.g., All Catalogs, All Jobs) from the multiselect dropdown.
 
 
 Confirm Deletion:
+
 Check the "I confirm I want to delete the selected resources (IRREVERSIBLE!)" checkbox.
 Click Delete Selected Resources to start the deletion process.
 
 
 Review Status:
+
 Success and error messages appear under "Deletion Status".
 For AI Brick-associated endpoints (e.g., ka-43d8c535-endpoint), manually delete the AI Brick in the Databricks UI and re-run the app.
 For foundation models (e.g., databricks-claude-3-7-sonnet), ensure the "Set rate limits to 0" option is enabled to disable them.
@@ -108,47 +117,6 @@ Check for CLI version compatibility (pip install databricks-cli --upgrade).
 
 
 
-CLI-Based Alternative
-To use the Databricks CLI instead of the SDK, replace the deletion functions in app.py with CLI equivalents. Example for serving endpoints:
-import subprocess
-import json
-
-def delete_serving_endpoints_cli(disable_foundation: bool, delete_bricks: bool) -> List[str]:
-    messages = []
-    try:
-        result = subprocess.run(
-            ["databricks", "serving-endpoints", "list", "--output", "JSON"],
-            capture_output=True, text=True, check=True
-        )
-        endpoints = json.loads(result.stdout).get("endpoints", [])
-        for endpoint in endpoints:
-            endpoint_name = endpoint["name"]
-            try:
-                if "databricks-" in endpoint_name and disable_foundation:
-                    subprocess.run(
-                        ["databricks", "serving-endpoints", "update-config", endpoint_name, "--json", json.dumps({
-                            "traffic_config": {"routes": [{"served_model_name": endpoint_name, "traffic_percentage": 0}]}
-                        })],
-                        check=True
-                    )
-                    messages.append(f"Disabled foundation model endpoint: {endpoint_name} (rate limits set to 0)")
-                else:
-                    subprocess.run(
-                        ["databricks", "serving-endpoints", "delete", endpoint_name],
-                        check=True
-                    )
-                    messages.append(f"Deleted serving endpoint: {endpoint_name}")
-            except subprocess.CalledProcessError as e:
-                error_msg = e.stderr
-                if "Please delete the AI Brick" in error_msg and delete_bricks:
-                    messages.append(f"AI Brick deletion for {endpoint_name} not supported in CLI. Please delete manually via UI.")
-                else:
-                    messages.append(f"Failed to delete serving endpoint: {endpoint_name}. Error: {error_msg}")
-    except subprocess.CalledProcessError as e:
-        messages.append(f"Error listing serving endpoints: {e.stderr}")
-    except Exception as e:
-        messages.append(f"Error listing serving endpoints: {str(e)}")
-    return messages
 
 
 Update requirements.txt to include databricks-cli==0.18.0.
